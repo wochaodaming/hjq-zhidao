@@ -51,8 +51,8 @@ public class ParseZhidao implements Callable<Score> {
                         score.setScore(j);
 
                         // 【规则】是否为TOP类型
-                        if (j == 1){
-                            if (s.contains("关于这条结果")){
+                        if (j == 1) {
+                            if (s.contains("关于这条结果")) {
                                 score.setType(ZhidaoType.Top);
                             }
                         }
@@ -61,6 +61,29 @@ public class ParseZhidao implements Callable<Score> {
                 }
             }
         }
+
+        //【规则】矫正“其他人还在搜”和“您要找的是”的插入，对排序的影响。
+        List<Integer> specialOrders = new ArrayList<>();
+        adjustLoop:
+        for (int i = 0; i < pss.length; i++) {
+            String s = pss[i];
+            // 【规则】当存在这两个字符串的时候，可判定为百度知道的条目。
+            if (s.contains("其他人还在搜") || s.contains("您要找的是")) {
+                // 【规则】判断是第几条。笨方法，匹配其order值。
+                for (int j = 1; j < 15; j++) {
+                    if (s.contains(" order=\"" + j + "\"")) {
+                        specialOrders.add(j);
+                        System.out.println("key" + this.key + "的一个特殊插入div序号为：" + j);
+                        break adjustLoop;
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < specialOrders.size(); i++) {
+            if (score.getScore() > specialOrders.get(i))
+                score.setScore(score.getScore() - 1);
+        }
+
         return score;
     }
 
